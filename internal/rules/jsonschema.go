@@ -7,13 +7,27 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-var NoDescriptionCommas = &analysis.Analyzer{
-	Name: "nodescriptioncommas",
-	Doc:  "Disallow commas in JSON Schema description fields",
-	Run:  noDescriptionCommasRun,
+var NoCommas = &analysis.Analyzer{
+	Name: "nocommas",
+	Doc:  "Disallow commas in JSON Schema fields",
+	Run:  noCommasRun,
 }
 
-func noDescriptionCommasRun(pass *analysis.Pass) (interface{}, error) {
+var allowedKeys = map[string]struct{}{
+	"$id": {}, "$schema": {}, "$ref": {}, "$comment": {},
+	"title": {}, "description": {}, "default": {}, "readOnly": {},
+	"examples": {}, "multipleOf": {}, "maximum": {}, "exclusiveMaximum": {},
+	"minimum": {}, "exclusiveMinimum": {}, "maxLength": {}, "minLength": {},
+	"pattern": {}, "additionalItems": {}, "items": {}, "maxItems": {},
+	"minItems": {}, "uniqueItems": {}, "contains": {}, "maxProperties": {},
+	"minProperties": {}, "required": {}, "additionalProperties": {},
+	"definitions": {}, "properties": {}, "patternProperties": {},
+	"dependencies": {}, "propertyNames": {}, "const": {}, "enum": {},
+	"type": {}, "format": {}, "contentMediaType": {}, "contentEncoding": {},
+	"if": {}, "then": {}, "else": {}, "allOf": {}, "anyOf": {}, "oneOf": {}, "not": {},
+}
+
+func noCommasRun(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
 			field, ok := n.(*ast.Field)
@@ -28,28 +42,40 @@ func noDescriptionCommasRun(pass *analysis.Pass) (interface{}, error) {
 				return true
 			}
 
-			// Parse key=value pairs in the jsonschema tag
-			kvs := parseKeyValuePairsLoose(jsonschemaTag)
-			desc := kvs["description"]
-			if strings.Contains(desc, ",") {
-				pass.Report(analysis.Diagnostic{
-					Pos:     field.Tag.Pos(),
-					End:     field.Tag.End(),
-					Message: "JSON Schema description fields should not contain commas",
-					SuggestedFixes: []analysis.SuggestedFix{
-						{
-							Message: "Add escape for comma in description",
-							TextEdits: []analysis.TextEdit{
-								{
-									Pos:     field.Tag.Pos(),
-									End:     field.Tag.End(),
-									NewText: []byte(strings.ReplaceAll(tag, desc, strings.ReplaceAll(desc, ",", ""))),
+			// Check if the tags are allowed keys only
+			for k, v := range parseKeyValuePairsLoose(jsonschemaTag) {
+				if _, allowed := allowedKeys[k]; !allowed {
+					pass.Report(analysis.Diagnostic{
+						Pos:     field.Tag.Pos(),
+						End:     field.Tag.End(),
+						Message: "JSON Schema fields must use allowed keys",
+					})
+					return true
+				}
+
+				// Parse key=value pairs in the jsonschema tag
+				if strings.Contains(v, ",") {
+					noCommas := strings.ReplaceAll(v, ",", "\\,")
+					newText := strings.ReplaceAll(tag, v, noCommas)
+					pass.Report(analysis.Diagnostic{
+						Pos:     field.Tag.Pos(),
+						End:     field.Tag.End(),
+						Message: "JSON Schema description fields should not contain commas",
+						SuggestedFixes: []analysis.SuggestedFix{
+							{
+								Message: "Add escape for comma in description",
+								TextEdits: []analysis.TextEdit{
+									{
+										Pos:     field.Tag.Pos() + 1,
+										End:     field.Tag.End() - 1,
+										NewText: []byte(newText),
+									},
 								},
 							},
 						},
-					},
-				})
+					})
 
+				}
 			}
 
 			return true
@@ -76,13 +102,13 @@ func parseTagValue(tag, key string) string {
 	return tag[start+1 : start+1+end]
 }
 
-// parseKeyValuePairsLoose allows commas inside values and only splits on key=value boundaries
+// parseKeyValuePairsLoose only splits on key=value boundaries
 func parseKeyValuePairsLoose(s string) map[string]string {
 	result := make(map[string]string)
 	fields := strings.Split(s, ",")
 	var currentKey string
 	for _, part := range fields {
-		part = strings.TrimSpace(part)
+		//part = strings.TrimSpace(part)
 		if eq := strings.Index(part, "="); eq != -1 {
 			key := strings.TrimSpace(part[:eq])
 			val := strings.TrimSpace(part[eq+1:])

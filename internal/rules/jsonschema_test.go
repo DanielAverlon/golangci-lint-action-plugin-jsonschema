@@ -10,13 +10,13 @@ import (
 func TestJsonSchema(t *testing.T) {
 	testDataDir := analysistest.TestData()
 
-	analysistest.Run(t, testDataDir, rules.NoDescriptionCommas, "./src/jsonschema/")
+	analysistest.Run(t, testDataDir, rules.NoCommas, "./src/jsonschema/")
 }
 
 func TestJsonSchemaAutoFix(t *testing.T) {
 	testDataDir := analysistest.TestData()
 
-	results := analysistest.RunWithSuggestedFixes(t, testDataDir, rules.NoDescriptionCommas, "./src/jsonschema/")
+	results := analysistest.RunWithSuggestedFixes(t, testDataDir, rules.NoCommas, "./src/jsonschema/")
 	suggestedFixProvided := false
 	for _, result := range results {
 		for _, diagnostic := range result.Diagnostics {
