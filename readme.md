@@ -1,7 +1,3 @@
-# Golangci-lint-action and Plugins Example
-
-This repository is an example to explain how to use [custom linters](https://golangci-lint.run/contributing/new-linters/#how-to-add-a-private-linter-to-golangci-lint) (plugins) with the [GitHub Action of golangci-lint](https://github.com/golangci/golangci-lint-action).
-
 ## Build and Install Plugins
 
 ```yml

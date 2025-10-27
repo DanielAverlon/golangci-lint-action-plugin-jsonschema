@@ -1,4 +1,4 @@
-module github.com/golangci/golangci-lint-action-plugin-example
+module github.com/DanielAverlon/golangci-linters
 
 go 1.24.0
 

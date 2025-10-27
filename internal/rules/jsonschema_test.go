@@ -3,7 +3,7 @@ package rules_test
 import (
 	"testing"
 
-	"github.com/golangci/golangci-lint-action-plugin-example/internal/rules"
+	"github.com/DanielAverlon/golangci-linters/internal/rules"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 

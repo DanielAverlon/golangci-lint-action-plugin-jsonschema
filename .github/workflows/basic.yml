@@ -32,7 +32,7 @@ jobs:
 
       - name: Install plugins
         run: |
-          git clone https://github.com/golangci/example-plugin-linter.git
+          git clone https://github.com/DanielAverlon/golangci-lint-action-plugin-example.git ${{ runner.temp }}/example-plugin-linter
           cd example-plugin-linter
           go build -o '${{ github.workspace }}/.plugins/example.so' -buildmode=plugin plugin/example.go
         working-directory: ${{ runner.temp }}
